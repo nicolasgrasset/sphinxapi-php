@@ -1,5 +1,8 @@
 <?php
 
+// Hack/setting to reduce memory usage if you don't need extra information around matches
+define ('DISABLE_MATCHES', true);
+
 //
 // $Id$ r2376
 //
@@ -1206,13 +1209,16 @@ class SphinxClient
 					$doc = sphFixUint($doc);
 				}
 				$weight = sprintf ( "%u", $weight );
-
-				// create match entry
-				if ( $this->_arrayresult )
-					$result["matches"][$idx] = array ( "id"=>$doc, "weight"=>$weight );
-				else
-					$result["matches"][$doc]["weight"] = $weight;
-
+			
+				if (!DISABLE_MATCHES)
+				{
+					// create match entry
+					if ( $this->_arrayresult )
+						$result["matches"][$idx] = array ( "id"=>$doc, "weight"=>$weight );
+					else
+						$result["matches"][$doc]["weight"] = $weight;
+				}
+				
 				// parse and create attributes
 				$attrvals = array ();
 				foreach ( $attrs as $attr=>$type )
@@ -1254,10 +1260,17 @@ class SphinxClient
 					}
 				}
 
-				if ( $this->_arrayresult )
-					$result["matches"][$idx]["attrs"] = $attrvals;
-				else
-					$result["matches"][$doc]["attrs"] = $attrvals;
+				if (DISABLE_MATCHES)
+				{
+					$result["matches"][$doc] = $attrvals;
+				} else
+				{
+					if ( $this->_arrayresult )
+						$result["matches"][$idx]["attrs"] = $attrvals;
+					else
+						$result["matches"][$doc]["attrs"] = $attrvals;
+				}
+					
 			}
 
 			list ( $total, $total_found, $msecs, $words ) =
