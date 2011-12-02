@@ -527,8 +527,12 @@ class SphinxClient
 
 	function _Send ( $handle, $data, $length )
 	{
-		if ( feof($handle) || fwrite ( $handle, $data, $length ) !== $length )
+		// FIXME: bad! *Temporarily* suppressing error messages here so it doesn't pollute the code errors
+		if ( feof($handle) || @fwrite ( $handle, $data, $length ) !== $length )
 		{
+			if (class_exists('QLog')) {
+				QLog::write('sphinx_error', 'sphinx broken pipe error: fwrite() failed');
+			}
 			$this->_error = 'connection unexpectedly closed (timed out?)';
 			$this->_connerror = true;
 			return false;
