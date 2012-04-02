@@ -1246,7 +1246,10 @@ class SphinxClient
 					}
 
 					// handle everything else as unsigned ints
+					// this unpack() is very hot code (slow)
+					// todo: check for "\0\0\0\0" or "\0\0\0".chr(1) ?
 					list(,$val) = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
+					
 					if ( $type==SPH_ATTR_MULTI )
 					{
 						$attrvals[$attr] = array ();
@@ -1271,6 +1274,8 @@ class SphinxClient
 						$p += $val;						
 					} else
 					{
+						// TODO: simply calling sphFixUint (even if its a no-op)
+						// is very hot code
 						$attrvals[$attr] = sphFixUint($val);
 					}
 				}
