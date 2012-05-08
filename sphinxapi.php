@@ -422,6 +422,8 @@ class SphinxClient
 	var $_mbenc;		///< stored mbstring encoding
 	var $_arrayresult;	///< whether $result["matches"] should be a hash or an array
 	var $_timeout;		///< connect timeout
+	
+	var $_servers;    ///< searchd server hosts
 
 	/////////////////////////////////////////////////////////////////////////////
 	// common stuff
@@ -432,6 +434,7 @@ class SphinxClient
 	{
 		// per-client-object settings
 		$this->_host		= "localhost";
+		$this->_servers    	= array();
 		$this->_port		= 9312;
 		$this->_path		= false;
 		$this->_socket		= false;
@@ -518,6 +521,14 @@ class SphinxClient
 		$this->_path = '';
 
 	}
+	
+	/// set searchd host name (string) and port (integer)
+	function SetServers ( Array $servers, $port = 0 )
+	{
+		$this->_servers = $servers;
+		$host = current( $servers );
+		$this->SetServer( $host, $port );
+	}
 
 	/// set server connection timeout (0 to remove)
 	function SetConnectTimeout ( $timeout )
@@ -557,9 +568,26 @@ class SphinxClient
 		if ( $this->_mbenc )
 			mb_internal_encoding ( $this->_mbenc );
 	}
-
-	/// connect to searchd server
+	
+	/// connect to first available host
 	function _Connect ()
+	{
+		$connect = $this->_ConnectSocket();
+		while( $connect === false && count($this->_servers) > 0 ) {
+			array_shift( $this->_servers );
+			$host = current( $this->_servers );
+			if( !empty($host) )
+			{
+				$this->SetServer( $host, $this->_port );
+				$connect = $this->_ConnectSocket();
+			}
+		}
+	
+		return $connect;
+	}
+	
+	/// connect to searchd server
+	function _ConnectSocket ()
 	{
 		if ( $this->_socket!==false )
 		{
